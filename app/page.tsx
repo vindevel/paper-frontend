@@ -1,65 +1,114 @@
-import Image from "next/image";
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { Search } from "lucide-react";
+
+interface AnalysisResult {
+  id: string;
+  title: string;
+  summary: string;
+  equations: string[];
+  images: string[];
+  tables: string[];
+}
+
+const mockPapers: AnalysisResult[] = [
+  {
+    id: "1",
+    title: "Portable Laser-Pumped Rb Atomic Clock with Digital Circuits",
+    summary:
+      "이 논문은 레이저로 구동되는 휴대용 루비듐 원자시계에 대해 설명합니다.",
+    equations: ["E = hf", "λ = c/f"],
+    images: ["시계 다이어그램", "레이저 설정도"],
+    tables: ["성능 매개변수", "주파수 안정성"],
+  },
+  {
+    id: "2",
+    title: "Agent AI with LangGraph: A Modular Framework",
+    summary:
+      "LangGraph를 사용한 에이전트 AI 프레임워크에 대한 모듈식 접근",
+    equations: ["P(A|B) = P(B|A)P(A)/P(B)"],
+    images: ["아키텍처 다이어그램"],
+    tables: ["성능 비교"],
+  },
+];
 
 export default function Home() {
+  const [searchQuery, setSearchQuery] = useState("");
+  const router = useRouter();
+
+  const handleSearch = () => {
+    if (searchQuery.trim()) {
+      const result = mockPapers[0];
+      router.push(
+        `/results?paperId=${result.id}&query=${encodeURIComponent(searchQuery)}`
+      );
+    }
+  };
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
+    <main
+      className="
+        h-[calc(100vh-64px)]   /* 네비게이션 높이(64px) 제외 */
+        w-full                 /* 가로 스크롤 방지 */
+        overflow-hidden         /* 스크롤 완전 제거 */
+        bg-white
+        flex items-center justify-center
+      "
+    >
+      {/* 중앙 카드 */}
+      <div
+        className="
+          rounded-3xl shadow-xl
+          p-25
+          w-[80vw] max-w-5xl
+          text-center
+          transform -translate-y-6
+        "
+        style={{
+          backgroundColor: "rgba(253, 195, 36, 0.1)", // FDC324 + 투명도 10%
+        }}
+      >
+        <div className="text-center mb-10">
+          <div className="flex justify-center mb-2">
+            <img
+              src="/black_logo.png"
+              alt="논문한입 검은색 로고"
+              width={120}
+              height={120}
+              className="object-contain"
             />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+          </div>
+          <h1 className="text-5xl text-[#030303] sm:text-5xl font-medium mb-4">논문한입</h1>
         </div>
-      </main>
-    </div>
+
+        {/* Search Box */}
+        <div className="flex justify-center gap-3 mb-6">
+          <div className="flex-1 max-w-2xl flex items-center border-2 border-gray-300 rounded-lg px-4 py-3 bg-white/70">
+            <Search size={22} className="text-gray-400 mr-3" />
+            <input
+              type="text"
+              placeholder="arXiv 논문 링크 또는 논문 제목 입력"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyPress={(e) => e.key === "Enter" && handleSearch()}
+              className="flex-1 outline-none bg-transparent text-gray-900 text-lg"
+            />
+          </div>
+          <button
+            onClick={handleSearch}
+            className="px-8 py-3 rounded-lg font-semibold text-black transition-all hover:shadow-lg"
+            style={{ backgroundColor: "#FDC324" }}
+          >
+            검색
+          </button>
+        </div>
+
+        <p className="text-center text-base text-gray-600">
+          사용자가 논문을 잘 이해할 수 있도록 돕는 AI 솔루션
+        </p>
+      </div>
+    </main>
   );
 }
