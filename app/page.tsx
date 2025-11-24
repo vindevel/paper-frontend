@@ -4,55 +4,88 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Search } from "lucide-react";
 
-interface AnalysisResult {
-  id: string;
-  title: string;
-  summary: string;
-  equations: string[];
-  images: string[];
-  tables: string[];
+function isUrl(text: string) {
+  const pattern = /^https?:\/\/[^\s]+$/;
+  return pattern.test(text);
 }
-
-const mockPapers: AnalysisResult[] = [
-  {
-    id: "1",
-    title: "Portable Laser-Pumped Rb Atomic Clock with Digital Circuits",
-    summary:
-      "이 논문은 레이저로 구동되는 휴대용 루비듐 원자시계에 대해 설명합니다.",
-    equations: ["E = hf", "λ = c/f"],
-    images: ["시계 다이어그램", "레이저 설정도"],
-    tables: ["성능 매개변수", "주파수 안정성"],
-  },
-  {
-    id: "2",
-    title: "Agent AI with LangGraph: A Modular Framework",
-    summary:
-      "LangGraph를 사용한 에이전트 AI 프레임워크에 대한 모듈식 접근",
-    equations: ["P(A|B) = P(B|A)P(A)/P(B)"],
-    images: ["아키텍처 다이어그램"],
-    tables: ["성능 비교"],
-  },
-];
 
 export default function Home() {
   const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [showOverlay, setShowOverlay] = useState(false);
+
   const router = useRouter();
 
-  const handleSearch = () => {
-    if (searchQuery.trim()) {
-      const result = mockPapers[0];
-      router.push(
-        `/results?paperId=${result.id}&query=${encodeURIComponent(searchQuery)}`
-      );
-    }
+  const handleSearch = async () => {
+    const trimmed = searchQuery.trim();
+    if (!trimmed) return;
+
+    /** -------------------------------------
+     * 1) URL 검색 → 바로 로딩 페이지 이동
+     * ------------------------------------- */
+    if (isUrl(trimmed)) {
+        try {
+          const res = await fetch("http://localhost:8080/api/arxiv/upload", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ url: trimmed }),
+          });
+
+          const data = await res.json();
+
+          router.push(
+            `/loading?paper=${encodeURIComponent(JSON.stringify(data))}`
+          );
+        } catch (e) {
+          console.error("UPLOAD ERROR:", e);
+        }
+
+        return;
+      }
+
+    /** -------------------------------------
+     * 2) 제목 검색 → arXiv POST 검색 API 호출
+     * ------------------------------------- */
+    try {
+        const res = await fetch(
+          `http://localhost:8080/api/arxiv/search?query=${encodeURIComponent(trimmed)}`,
+          {
+            method: "GET",
+          }
+        );
+
+        const data = await res.json();
+
+        if (!Array.isArray(data) || data.length === 0) {
+          setSearchResults([]);
+          setShowOverlay(false);
+          return;
+        }
+
+        setSearchResults(data);
+        setShowOverlay(true);
+
+      } catch (e) {
+        console.error("SEARCH ERROR:", e);
+      }
+    };
+
+  /** -------------------------------------
+   * 제목 검색 결과 중 하나 선택하면
+   * 로딩 페이지로 이동
+   * ------------------------------------- */
+  const handleSelectPaper = (paper: any) => {
+    router.push(
+      `/loading?paper=${encodeURIComponent(JSON.stringify(paper))}`
+    );
   };
 
   return (
     <main
       className="
-        h-[calc(100vh-64px)]   /* 네비게이션 높이(64px) 제외 */
-        w-full                 /* 가로 스크롤 방지 */
-        overflow-hidden         /* 스크롤 완전 제거 */
+        h-[calc(100vh-64px)]
+        w-full
+        overflow-hidden
         bg-white
         flex items-center justify-center
       "
@@ -60,6 +93,7 @@ export default function Home() {
       {/* 중앙 카드 */}
       <div
         className="
+          relative
           rounded-3xl shadow-xl
           p-25
           w-[80vw] max-w-5xl
@@ -67,7 +101,7 @@ export default function Home() {
           transform -translate-y-6
         "
         style={{
-          backgroundColor: "rgba(253, 195, 36, 0.1)", // FDC324 + 투명도 10%
+          backgroundColor: "rgba(253, 195, 36, 0.1)",
         }}
       >
         <div className="text-center mb-10">
@@ -80,11 +114,13 @@ export default function Home() {
               className="object-contain"
             />
           </div>
-          <h1 className="text-5xl text-[#030303] sm:text-5xl font-medium mb-4">논문한입</h1>
+          <h1 className="text-5xl text-[#030303] sm:text-5xl font-medium mb-4">
+            논문한입
+          </h1>
         </div>
 
         {/* Search Box */}
-        <div className="flex justify-center gap-3 mb-6">
+        <div className="flex justify-center gap-3 mb-6 relative">
           <div className="flex-1 max-w-2xl flex items-center border-2 border-gray-300 rounded-lg px-4 py-3 bg-white/70">
             <Search size={22} className="text-gray-400 mr-3" />
             <input
@@ -92,7 +128,7 @@ export default function Home() {
               placeholder="arXiv 논문 링크 또는 논문 제목 입력"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyPress={(e) => e.key === "Enter" && handleSearch()}
+              onKeyDown={(e) => e.key === "Enter" && handleSearch()}
               className="flex-1 outline-none bg-transparent text-gray-900 text-lg"
             />
           </div>
@@ -103,6 +139,32 @@ export default function Home() {
           >
             검색
           </button>
+
+          {/* ▼▼ 검색 결과 오버레이 (디자인 변경 없음) ▼▼ */}
+          {showOverlay && searchResults.length > 0 && (
+            <div
+              className="
+                absolute left-0 right-0 top-full mt-2
+                bg-white border border-gray-200
+                shadow-lg rounded-xl
+                max-h-80 overflow-y-auto z-50
+                text-left
+              "
+            >
+              {searchResults.map((paper, idx) => (
+                <div
+                  key={idx}
+                  onClick={() => handleSelectPaper(paper)}
+                  className="p-4 border-b hover:bg-gray-50 cursor-pointer"
+                >
+                  <h2 className="font-semibold">{paper.title}</h2>
+                  <p className="text-gray-600 text-sm line-clamp-2">
+                    {paper.summary}
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         <p className="text-center text-base text-gray-600">
