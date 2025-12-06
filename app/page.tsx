@@ -24,25 +24,9 @@ export default function Home() {
      * 1) URL 검색 → 바로 로딩 페이지 이동
      * ------------------------------------- */
     if (isUrl(trimmed)) {
-        try {
-          const res = await fetch("http://localhost:8080/api/arxiv/upload", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ url: trimmed }),
-          });
-
-          const data = await res.json();
-
-          router.push(
-            `/loading?paper=${encodeURIComponent(JSON.stringify(data))}`
-          );
-        } catch (e) {
-          console.error("UPLOAD ERROR:", e);
-        }
-
-        return;
-      }
-
+      router.push(`/loading?url=${encodeURIComponent(trimmed)}`);
+      return;
+    }
     /** -------------------------------------
      * 2) 제목 검색 → arXiv POST 검색 API 호출
      * ------------------------------------- */

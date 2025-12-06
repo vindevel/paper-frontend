@@ -31,8 +31,8 @@ const mockAnalysis = {
     },
   ],
   equations: [
-    { title: "공식 1", content: "주파수 변화: Δf/f = (Δλ/λ) × (c/f)" },
-    { title: "공식 2", content: "불확실도: σ = √(σ₀² + σ₁²)" },
+    { title: "페이지 1", content: "주파수 변화: Δf/f = (Δλ/λ) × (c/f)" },
+    { title: "페이지 2", content: "불확실도: σ = √(σ₀² + σ₁²)" },
   ],
   images: [
     { title: "이미지 1", content: "원자시계의 전체 블록 다이어그램" },
@@ -49,7 +49,15 @@ export default function Results() {
   const [activeTab, setActiveTab] = useState<
     "summary" | "story" | "equations" | "images" | "tables"
   >("summary")
-  const [expandedItem, setExpandedItem] = useState<string | null>(null)
+  const [expandedItems, setExpandedItems] = useState<string[]>([])
+
+  const toggleItem = (key: string) => {
+    setExpandedItems((prev) =>
+      prev.includes(key)
+        ? prev.filter((item) => item !== key) // 이미 열려있으면 제거(닫기)
+        : [...prev, key]                      // 없으면 추가(열기)
+    )
+  }
 
   const tabs = [
     { id: "summary", label: "요약" },
@@ -61,21 +69,34 @@ export default function Results() {
 
   const renderContent = () => {
     switch (activeTab) {
-      // 요약 탭 (3개 박스)
+      // 요약 탭 (multi toggle)
       case "summary":
         return (
-          <div className="space-y-6">
-            {mockAnalysis.summaries.map((item, idx) => (
-              <div
-                key={idx}
-                className="bg-gray-50 p-6 rounded-lg border border-gray-200"
-              >
-                <h3 className="font-semibold text-lg text-gray-800 mb-2">{item.title}</h3>
-                <p className="text-gray-700 leading-relaxed">{item.content}</p>
-              </div>
-            ))}
+          <div className="space-y-3">
+            {mockAnalysis.summaries.map((item, idx) => {
+              const key = `sum-${idx}`
+
+              return (
+                <div key={idx} className="border border-gray-200 rounded-lg overflow-hidden">
+                  <button
+                    onClick={() => toggleItem(key)}
+                    className="w-full px-4 py-3 text-left font-semibold flex justify-between items-center hover:bg-gray-50"
+                  >
+                    {item.title}
+                    <span>{expandedItems.includes(key) ? "−" : "+"}</span>
+                  </button>
+
+                  {expandedItems.includes(key) && (
+                    <div className="px-4 py-3 bg-gray-50 border-t border-gray-200 text-gray-700 leading-relaxed">
+                      {item.content}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
           </div>
         )
+
 
       // 스토리텔링 탭
       case "story":
@@ -110,24 +131,28 @@ export default function Results() {
       case "equations":
         return (
           <div className="space-y-3">
-            {mockAnalysis.equations.map((item, idx) => (
-              <div key={idx} className="border border-gray-200 rounded-lg overflow-hidden">
-                <button
-                  onClick={() =>
-                    setExpandedItem(expandedItem === `eq-${idx}` ? null : `eq-${idx}`)
-                  }
-                  className="w-full px-4 py-3 text-left font-semibold flex justify-between items-center hover:bg-gray-50"
-                >
-                  {item.title}
-                  <span>{expandedItem === `eq-${idx}` ? "−" : "+"}</span>
-                </button>
-                {expandedItem === `eq-${idx}` && (
-                  <div className="px-4 py-3 bg-gray-50 border-t border-gray-200 text-gray-700">
-                    {item.content}
-                  </div>
-                )}
-              </div>
-            ))}
+            {mockAnalysis.equations.map((item, idx) => {
+              const key = `eq-${idx}`
+              const isOpen = expandedItems.includes(key)
+
+              return (
+                <div key={idx} className="border border-gray-200 rounded-lg overflow-hidden">
+                  <button
+                    onClick={() => toggleItem(key)}
+                    className="w-full px-4 py-3 text-left font-semibold flex justify-between items-center hover:bg-gray-50"
+                  >
+                    {item.title}
+                    <span>{isOpen ? "−" : "+"}</span>
+                  </button>
+
+                  {isOpen && (
+                    <div className="px-4 py-3 bg-gray-50 border-t border-gray-200 text-gray-700">
+                      {item.content}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
           </div>
         )
 
@@ -135,54 +160,62 @@ export default function Results() {
       case "images":
         return (
           <div className="space-y-3">
-            {mockAnalysis.images.map((item, idx) => (
-              <div key={idx} className="border border-gray-200 rounded-lg overflow-hidden">
-                <button
-                  onClick={() =>
-                    setExpandedItem(expandedItem === `img-${idx}` ? null : `img-${idx}`)
-                  }
-                  className="w-full px-4 py-3 text-left font-semibold flex justify-between items-center hover:bg-gray-50"
-                >
-                  {item.title}
-                  <span>{expandedItem === `img-${idx}` ? "−" : "+"}</span>
-                </button>
-                {expandedItem === `img-${idx}` && (
-                  <div className="px-4 py-3 bg-gray-50 border-t border-gray-200 text-gray-700">
-                    {item.content}
-                  </div>
-                )}
-              </div>
-            ))}
+            {mockAnalysis.images.map((item, idx) => {
+              const key = `img-${idx}`
+              const isOpen = expandedItems.includes(key)
+
+              return (
+                <div key={idx} className="border border-gray-200 rounded-lg overflow-hidden">
+                  <button
+                    onClick={() => toggleItem(key)}
+                    className="w-full px-4 py-3 text-left font-semibold flex justify-between items-center hover:bg-gray-50"
+                  >
+                    {item.title}
+                    <span>{isOpen ? "−" : "+"}</span>
+                  </button>
+
+                  {isOpen && (
+                    <div className="px-4 py-3 bg-gray-50 border-t border-gray-200 text-gray-700">
+                      {item.content}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
           </div>
         )
+
 
       // 표 분석
       case "tables":
         return (
           <div className="space-y-3">
-            {mockAnalysis.tables.map((item, idx) => (
-              <div key={idx} className="border border-gray-200 rounded-lg overflow-hidden">
-                <button
-                  onClick={() =>
-                    setExpandedItem(expandedItem === `tbl-${idx}` ? null : `tbl-${idx}`)
-                  }
-                  className="w-full px-4 py-3 text-left font-semibold flex justify-between items-center hover:bg-gray-50"
-                >
-                  {item.title}
-                  <span>{expandedItem === `tbl-${idx}` ? "−" : "+"}</span>
-                </button>
-                {expandedItem === `tbl-${idx}` && (
-                  <div className="px-4 py-3 bg-gray-50 border-t border-gray-200 text-gray-700">
-                    {item.content}
-                  </div>
-                )}
-              </div>
-            ))}
+            {mockAnalysis.tables.map((item, idx) => {
+              const key = `tbl-${idx}`
+              const isOpen = expandedItems.includes(key)
+
+              return (
+                <div key={idx} className="border border-gray-200 rounded-lg overflow-hidden">
+                  <button
+                    onClick={() => toggleItem(key)}
+                    className="w-full px-4 py-3 text-left font-semibold flex justify-between items-center hover:bg-gray-50"
+                  >
+                    {item.title}
+                    <span>{isOpen ? "−" : "+"}</span>
+                  </button>
+
+                  {isOpen && (
+                    <div className="px-4 py-3 bg-gray-50 border-t border-gray-200 text-gray-700">
+                      {item.content}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
           </div>
         )
-    }
+      }
   }
-
   return (
     <main className="min-h-screen bg-white">
       <div className="max-w-4xl mx-auto px-4 py-8">
